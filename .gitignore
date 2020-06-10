@@ -16,3 +16,6 @@ __pycache__/
 *.mp4
 *.flac
 *.mp3
+
+# Data Files
+*.npy

@@ -12,10 +12,6 @@ import multiprocessing.dummy as mp
 
 import numpy as np
 import librosa
-import matplotlib.pyplot as plt
-from scipy.io import wavfile
-from scipy.signal import fftconvolve
-import IPython
 import pyroomacoustics as pra
 import soundfile as sf
 
@@ -42,6 +38,25 @@ def handle_error(e):
     print(e)
 
 
+def get_voices(args):
+    # Make sure we dont get an empty sequence
+    success = False
+    while not success:
+        voice_files = random.sample(args.all_voices, args.n_voices)
+        # Save the identity also. This is VCTK specific
+        success = True
+        voices_data = []
+        for voice_file in voice_files:
+            voice_identity = str(voice_file).split("/")[-1].split("_")[0]
+            voice, _ = librosa.core.load(voice_file, sr=args.sr, mono=True)
+            voice, _ = librosa.effects.trim(voice)
+            if voice.std() == 0:
+                success = False
+            voices_data.append((voice, voice_identity))
+
+    return voices_data
+
+
 def generate_sample(args: argparse.Namespace, bg: np.ndarray, idx: int) -> int:
     """
     Generate a single sample. Return 0 on success.
@@ -58,14 +73,7 @@ def generate_sample(args: argparse.Namespace, bg: np.ndarray, idx: int) -> int:
     output_prefix_dir = os.path.join(args.output_path, '{:05d}'.format(idx))
     Path(output_prefix_dir).mkdir(parents=True, exist_ok=True)
 
-    voice_files = random.sample(args.all_voices, args.n_voices)
-
-    # Save the identity also. This is VCTK specific
-    voices_data = []
-    for voice_file in voice_files:
-        voice_identity = str(voice_file).split("/")[-1].split("_")[0]
-        voice, _ = librosa.core.load(voice_file, sr=args.sr, mono=True)
-        voices_data.append((voice, voice_identity))
+    voices_data = get_voices(args)
 
     # [2]
     total_samples = int(args.duration * args.sr)
@@ -75,10 +83,10 @@ def generate_sample(args: argparse.Namespace, bg: np.ndarray, idx: int) -> int:
         sample_bg = bg[bg_start_idx:bg_start_idx + total_samples]
 
     # Generate room parameters, each scene has a random room and absorption
-    left_wall = np.random.uniform(low=-20, high=-6.5)
-    right_wall = np.random.uniform(low=20, high=6.5)
-    top_wall = np.random.uniform(low=20, high=6.5)
-    bottom_wall = np.random.uniform(low=-20, high=-6.5)
+    left_wall = np.random.uniform(low=-20, high=-15)
+    right_wall = np.random.uniform(low=15, high=20)
+    top_wall = np.random.uniform(low=15, high=20)
+    bottom_wall = np.random.uniform(low=-20, high=-15)
     absorption = np.random.uniform(low=0.1, high=0.99)
     corners = np.array([[left_wall, bottom_wall], [left_wall, top_wall],
                     [   right_wall, top_wall], [right_wall, bottom_wall]]).T
@@ -213,9 +221,9 @@ if __name__ == '__main__':
     parser.add_argument('output_path', type=str, help="Output directory to write the synthetic dataset")
     parser.add_argument('--input_background_path',
                         type=str)
-    parser.add_argument('--n_mics', type=int, default=6)
+    parser.add_argument('--n_mics', type=int, default=4)
     parser.add_argument('--mic_radius',
-                        default=.0725,
+                        default=.03231,
                         type=float,
                         help="To do")
     parser.add_argument('--n_voices', type=int, default=4)

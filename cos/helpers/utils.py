@@ -80,4 +80,12 @@ def to_categorical(index: int, num_classes: int):
     data[index] = 1
     return data
 
+def convert_angular_range(angle: float):
+    """Converts an arbitrary angle to the range [-pi pi]"""
+    corrected_angle = angle % (2 * np.pi)
+    if corrected_angle > np.pi:
+        corrected_angle -= (2 * np.pi)
+
+    return corrected_angle
+
 

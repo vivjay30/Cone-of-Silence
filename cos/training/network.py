@@ -73,14 +73,14 @@ def unnormalize_input(data, means, stds):
     return data
 
 
-
 class CoSNetwork(nn.Module):
     """
     Cone of Silence network based on the Demucs network for audio source separation.
     """
     def __init__(
             self,
-            n_audio_channels: int = 2,  # pylint: disable=redefined-outer-name
+            n_audio_channels: int = 4,  # pylint: disable=redefined-outer-name
+            window_conditioning_size: int = 5,
             kernel_size: int = 8,
             stride: int = 4,
             context: int = 3,
@@ -91,6 +91,7 @@ class CoSNetwork(nn.Module):
             rescale: float = 0.1):  # pylint: disable=redefined-outer-name
         super().__init__()
         self.n_audio_channels = n_audio_channels
+        self.window_conditioning_size = window_conditioning_size
         self.kernel_size = kernel_size
         self.stride = stride
         self.context = context
@@ -117,8 +118,8 @@ class CoSNetwork(nn.Module):
             encode["conv2"] = nn.Conv1d(channels, 2 * channels, 1)
             encode["activation"] = activation
 
-            encode["gc_embed1"] = nn.Conv1d(5, channels, 1)
-            encode["gc_embed2"] = nn.Conv1d(5, 2 * channels, 1)
+            encode["gc_embed1"] = nn.Conv1d(self.window_conditioning_size, channels, 1)
+            encode["gc_embed2"] = nn.Conv1d(self.window_conditioning_size, 2 * channels, 1)
 
             self.encoder.append(encode)
 
@@ -133,8 +134,8 @@ class CoSNetwork(nn.Module):
             decode["conv2"] = nn.ConvTranspose1d(channels, out_channels,
                                                  kernel_size, stride)
 
-            decode["gc_embed1"] = nn.Conv1d(5, 2 * channels, 1)
-            decode["gc_embed2"] = nn.Conv1d(5, out_channels, 1)
+            decode["gc_embed1"] = nn.Conv1d(self.window_conditioning_size, 2 * channels, 1)
+            decode["gc_embed2"] = nn.Conv1d(self.window_conditioning_size, out_channels, 1)
 
             if index > 0:
                 decode["relu"] = nn.ReLU()
@@ -229,7 +230,7 @@ def load_pretrain(model, state_dict):  # pylint: disable=redefined-outer-name
     for key in state_dict.keys():
         try:
             _ = model.load_state_dict({key: state_dict[key]}, strict=False)
-            print("Load {} (shape = {}) from the pretrained model".format(
+            print("Loaded {} (shape = {}) from the pretrained model".format(
                 key, state_dict[key].shape))
         except Exception as e:
             print("Failed to load {}".format(key))

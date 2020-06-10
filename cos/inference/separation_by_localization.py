@@ -17,14 +17,15 @@ import cos.helpers.utils as utils
 
 from cos.helpers.constants import ALL_WINDOW_SIZES, \
     FAR_FIELD_RADIUS
+from cos.helpers.visualization import draw_diagram
 from cos.training.network import CoSNetwork, center_trim, \
     normalize_input, unnormalize_input
+from cos.helpers.eval_utils import cheap_sdr
 
 # Constants which may be tweaked based on your setup
-ENERGY_CUTOFF = 0.003
-NMS_RADIUS = np.pi / 6
-NMS_SIMILARITY_CUTOFF = 0.015
-DURATION = 3.0  # How long to run each sample
+ENERGY_CUTOFF = 0.001
+NMS_RADIUS = np.pi / 8
+NMS_SIMILARITY_SDR = -5.0  # SDR cutoff for different candidates
 
 CandidateVoice = namedtuple("CandidateVoice", ["angle", "energy", "data"])
 
@@ -45,6 +46,7 @@ def nms(candidate_voices, nms_cutoff):
         # Choose the loudest voice
         best_candidate_voice = sorted_candidates[0]
         final_proposals.append(best_candidate_voice)
+        sorted_candidates.pop(0)
 
         # See if any of the rest should be removed
         for candidate_voice in sorted_candidates:
@@ -55,7 +57,11 @@ def nms(candidate_voices, nms_cutoff):
                 candidate_voice.data -
                 best_candidate_voice.data).mean() > nms_cutoff
 
-            if different_locations or different_content:
+            different_content = cheap_sdr(
+                candidate_voice.data[0],
+                best_candidate_voice.data[0]) < nms_cutoff
+
+            if different_locations:
                 new_initial_proposals.append(candidate_voice)
 
         initial_proposals = new_initial_proposals
@@ -100,13 +106,12 @@ def forward_pass(model, target_angle, mixed_data, conditioning_label, args):
 
 def run_separation(mixed_data, model, args,
                    energy_cutoff=ENERGY_CUTOFF,
-                   nms_cutoff=NMS_SIMILARITY_CUTOFF): # yapf: disable
+                   nms_cutoff=NMS_SIMILARITY_SDR): # yapf: disable
     """
     The main separation by localization algorithm
     """
     # Get the initial candidates
     num_windows = len(ALL_WINDOW_SIZES)
-    # num_windows = 3  # To coarsely localize use this. Separation is a bit better
     starting_angles = utils.get_starting_angles(ALL_WINDOW_SIZES[0])
     candidate_voices = [CandidateVoice(x, None, None) for x in starting_angles]
 
@@ -150,16 +155,23 @@ def run_separation(mixed_data, model, args,
                     new_candidate_voices.append(
                         CandidateVoice(voice.angle, energy, unshifted_output))
 
-                # Split region and recurse
+                # Split region and recurse.
+                # This division has more redundancy than necessary, but 
+                # Avoids missing some sources
                 else:
                     new_candidate_voices.append(
                         CandidateVoice(
-                            voice.angle + curr_window_size / 4,
+                            voice.angle + curr_window_size / 3,
                             energy, output))
                     new_candidate_voices.append(
                         CandidateVoice(
-                            voice.angle - curr_window_size / 4,
+                            voice.angle - curr_window_size / 3,
                             energy, output))
+                    new_candidate_voices.append(
+                        CandidateVoice(
+                            voice.angle,
+                            energy, output))
+
         candidate_voices = new_candidate_voices
 
     # Run NMS on the final output and return
@@ -181,7 +193,7 @@ def main(args):
     mixed_data = librosa.core.load(args.input_file, mono=False, sr=args.sr)[0]
     assert mixed_data.shape[0] == args.n_channels
 
-    temporal_chunk_size = int(args.sr * DURATION)
+    temporal_chunk_size = int(args.sr * args.duration)
     num_chunks = (mixed_data.shape[1] // temporal_chunk_size) + 1
 
     for chunk_idx in range(num_chunks):
@@ -194,13 +206,18 @@ def main(args):
         curr_mixed_data = mixed_data[:, (chunk_idx *
                                          temporal_chunk_size):(chunk_idx + 1) *
                                      temporal_chunk_size]
+
         output_voices = run_separation(curr_mixed_data, model, args)
-        for voice in output_voices:
+        for voice in output_voices[:1]:
             fname = "output_angle{:.2f}.wav".format(
                 voice.angle * 180 / np.pi)
             sf.write(os.path.join(args.writing_dir, fname), voice.data[0],
                      args.sr)
 
+        candidate_angles = [voice.angle for voice in output_voices]
+        draw_diagram([], candidate_angles,
+                    ALL_WINDOW_SIZES[-1],
+                    os.path.join(args.writing_dir, "positions.png".format(chunk_idx)))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -220,15 +237,15 @@ if __name__ == '__main__':
                         dest='use_cuda',
                         action='store_true',
                         help="Whether to use cuda")
-    parser.add_argument('--device',
-                        type=str,
-                        default='cpu',
-                        help="Device for pytorch")
     parser.add_argument('--debug',
                         action='store_true',
                         help="Save intermediate outputs")
     parser.add_argument('--mic_radius',
                         default=.03231,
                         type=float,
-                        help="To do")
+                        help="Radius of the mic array")
+    parser.add_argument('--duration',
+                        default=3.0,
+                        type=float,
+                        help="Seconds of input to the network")
     main(parser.parse_args())
