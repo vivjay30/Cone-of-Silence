@@ -16,11 +16,11 @@ import pyroomacoustics as pra
 import soundfile as sf
 
 # Mean and STD of the signal peak
-FG_TARGET_VOL = 0.25
-FG_VOL_STD = 0.15
+FG_VOL_MIN = 0.15
+FG_VOL_MAX = 0.4
 
-BG_TARGET_VOL = 0.2
-BG_VOL_STD = 0.2
+BG_VOL_MIN = 0.2
+BG_VOL_MAX = 0.5
 
 
 def generate_mic_array(room, mic_radius: float, n_mics: int):
@@ -108,14 +108,15 @@ def generate_sample(args: argparse.Namespace, bg: np.ndarray, idx: int) -> int:
             voice_radius * np.cos(voice_theta),
             voice_radius * np.sin(voice_theta)
         ]
+
         voice_positions.append(voice_loc)
         room.add_source(voice_loc, signal=voices_data[voice_idx][0])
 
         room.image_source_model(use_libroom=True)
         room.simulate()
         fg_signals = room.mic_array.signals[:, :total_samples]
-        fg_target = np.clip(np.random.normal(FG_TARGET_VOL, FG_VOL_STD), 0, 1)
-        fg_signals = fg_signals * fg_target / fg_signals.max()
+        fg_target = np.random.uniform(FG_VOL_MIN, FG_VOL_MAX)
+        fg_signals = fg_signals * fg_target / abs(fg_signals).max()
         all_fg_signals.append(fg_signals)
 
     # BG
@@ -142,8 +143,8 @@ def generate_sample(args: argparse.Namespace, bg: np.ndarray, idx: int) -> int:
         room.image_source_model(use_libroom=True)
         room.simulate()
         bg_signals = room.mic_array.signals[:, :total_samples]
-        bg_target = np.clip(np.random.normal(BG_TARGET_VOL, BG_VOL_STD), 0, 1)
-        bg_signals = bg_signals * bg_target / bg_signals.max()
+        bg_target = np.random.uniform(BG_VOL_MIN, BG_VOL_MAX)
+        bg_signals = bg_signals * bg_target / abs(bg_signals).max()
 
     # Save
     for mic_idx in range(args.n_mics):

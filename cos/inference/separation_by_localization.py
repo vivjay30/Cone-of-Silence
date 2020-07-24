@@ -53,15 +53,15 @@ def nms(candidate_voices, nms_cutoff):
             different_locations = utils.angular_distance(
                 candidate_voice.angle, best_candidate_voice.angle) > NMS_RADIUS
 
-            different_content = abs(
-                candidate_voice.data -
-                best_candidate_voice.data).mean() > nms_cutoff
+            # different_content = abs(
+            #     candidate_voice.data -
+            #     best_candidate_voice.data).mean() > nms_cutoff
 
             different_content = cheap_sdr(
                 candidate_voice.data[0],
                 best_candidate_voice.data[0]) < nms_cutoff
 
-            if different_locations:
+            if different_locations or different_content:
                 new_initial_proposals.append(candidate_voice)
 
         initial_proposals = new_initial_proposals
@@ -156,20 +156,28 @@ def run_separation(mixed_data, model, args,
                         CandidateVoice(voice.angle, energy, unshifted_output))
 
                 # Split region and recurse.
-                # This division has more redundancy than necessary, but 
-                # Avoids missing some sources
+                # You can either split strictly (fourths)
+                # or with some redundancy (thirds)
                 else:
+                    # new_candidate_voices.append(
+                    #     CandidateVoice(
+                    #         voice.angle + curr_window_size / 3,
+                    #         energy, output))
+                    # new_candidate_voices.append(
+                    #     CandidateVoice(
+                    #         voice.angle - curr_window_size / 3,
+                    #         energy, output))
+                    # new_candidate_voices.append(
+                    #     CandidateVoice(
+                    #         voice.angle,
+                    #         energy, output))
                     new_candidate_voices.append(
                         CandidateVoice(
-                            voice.angle + curr_window_size / 3,
+                            voice.angle + curr_window_size / 4,
                             energy, output))
                     new_candidate_voices.append(
                         CandidateVoice(
-                            voice.angle - curr_window_size / 3,
-                            energy, output))
-                    new_candidate_voices.append(
-                        CandidateVoice(
-                            voice.angle,
+                            voice.angle - curr_window_size / 4,
                             energy, output))
 
         candidate_voices = new_candidate_voices

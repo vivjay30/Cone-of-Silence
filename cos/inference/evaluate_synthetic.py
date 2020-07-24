@@ -132,17 +132,17 @@ def main(args):
 
         # Evaluate SDR and Angular Error
         else:
-            for output_idx, gt_idx in enumerate(best_permutation):
-                angle_error = angular_distance(candidate_voices[output_idx][0],
-                                               gt[gt_idx][0])
+            for gt_idx, output_idx in enumerate(best_permutation):
+                angle_error = angular_distance(candidate_voices[output_idx].angle,
+                                               gt[gt_idx].angle)
                 curr_angle_errors.append(angle_error)
 
                 # To speed up we only evaluate channel 0. For rigorous results
                 # set that to false
-                input_sdr = compute_sdr(mixed_data, gt[gt_idx].data,
+                input_sdr = compute_sdr(gt[gt_idx].data, mixed_data,
                                         single_channel=True)
-                output_sdr = compute_sdr(candidate_voices[output_idx].data,
-                                         gt[gt_idx].data, single_channel=True)
+                output_sdr = compute_sdr(gt[gt_idx].data,
+                                         candidate_voices[output_idx].data, single_channel=True)
                 curr_input_sdr.append(input_sdr)
                 curr_output_sdr.append(output_sdr)
 
@@ -164,17 +164,17 @@ def main(args):
 
     else:
         print("Median Angular Error: ", np.median(np.array(all_angle_errors)) * 180 / np.pi)
-        np.save("angleerror_{}voices.npy".format(args.n_voices),
-                np.array(all_angle_errors))
 
         print("Median SDRi: ",
               np.median(np.array(all_output_sdr) - np.array(all_input_sdr)))
-        import pdb
-        pdb.set_Trace()
-        np.save("inputsdr_{}voices.npy".format(args.n_voices),
-                np.array(all_input_sdr))
-        np.save("outputsdr_{}voices.npy".format(args.n_voices),
-                np.array(all_output_sdr))
+
+        # Uncomment to save the data for visualization
+        # np.save("angleerror_{}voices.npy".format(args.n_voices),
+        #         np.array(all_angle_errors))
+        # np.save("inputsdr_{}voices.npy".format(args.n_voices),
+        #         np.array(all_input_sdr))
+        # np.save("outputsdr_{}voices.npy".format(args.n_voices),
+        #         np.array(all_output_sdr))
 
 
 
@@ -192,15 +192,14 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cpu',
                         help="Device for pytorch")
     parser.add_argument('--debug', action='store_true', help="Save outputs")
-    parser.add_argument('--normalization_type', default=2, type=int,
-                        help="To do")
     parser.add_argument('--mic_radius', default=.0725, type=float,
                         help="To do")
     parser.add_argument('--n_workers', default=8, type=int,
                         help="Multiprocessing")
     parser.add_argument(
         '--n_voices', default=2, type=int, help=
-        "Number of voices in the GT scenarios. Useful so you can re-use the same dataset with different number of fg sources"
+        "Number of voices in the GT scenarios. \
+         Useful so you can re-use the same dataset with different number of fg sources"
     )
     parser.add_argument(
         '--prec_recall', action='store_true', help=
