@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 
 from pathlib import Path
 
@@ -7,9 +8,10 @@ import torch
 import numpy as np
 import librosa
 import soundfile as sf
+import tqdm
 
 from cos.helpers.eval_utils import find_best_permutation_prec_recall, compute_sdr
-from cos.helpers.utils import angular_distance
+from cos.helpers.utils import angular_distance, check_valid_dir
 from cos.training.network import CoSNetwork
 from cos.inference.separation_by_localization import run_separation, CandidateVoice
 
@@ -77,7 +79,11 @@ def main(args):
     model.to(device)
 
     all_dirs = sorted(list(Path(args.test_dir).glob('[0-9]*')))
-    
+    all_dirs = [x for x in all_dirs if check_valid_dir(x, args.n_voices)]
+
+    if args.prec_recall and args.oracle_position:
+        raise(ValueError("Either specify prec recall or oracle position"))
+
     if args.prec_recall:
         # True positives, false negatives, false positives
         all_tp, all_fn, all_fp = [], [], []
@@ -91,8 +97,13 @@ def main(args):
     gpu_lock = Lock()
 
     def evaluate_dir(idx):
+        if args.debug:
+            curr_writing_dir = "{:05d}".format(idx)
+            if not os.path.exists(curr_writing_dir):
+                os.makedirs(curr_writing_dir)
+            args.writing_dir = curr_writing_dir
+
         curr_dir = all_dirs[idx]
-        print(f"Working on dir {idx}\n")
 
         # Loads the data
         mixed_data, gt = get_items(curr_dir, args)
@@ -104,20 +115,41 @@ def main(args):
             candidate_voices = run_separation(mixed_data, model, args)
 
         else:
-            candidate_voices = run_separation(mixed_data, model, args)
-
-            # In order to compute SDR or angle error, the number of sources must match gt
+            # Normal run
+            if not args.oracle_position:
+                candidate_voices = run_separation(mixed_data, model, args, 0.005)
+            # In order to compute SDR or angle error, the number of outputs must match gt
             # We set a very low threshold to ensure we get the correct number of outputs
-            if len(candidate_voices) < len(gt):
+            if args.oracle_position or len(candidate_voices) < len(gt):
+                # print("Had to go again\n")
                 candidate_voices = run_separation(mixed_data, model, args, 0.000001)
 
-            candidate_voices = candidate_voices[:args.n_voices]
+            # Use the GT positions to find the best sources
+            if args.oracle_position:
+                trimmed_voices = []
+                for gt_idx in range(args.n_voices):
+                    best_idx = np.argmin(np.array([angular_distance(x.angle,
+                                               gt[gt_idx].angle) for x in candidate_voices]))
+                    trimmed_voices.append(candidate_voices[best_idx])
+                candidate_voices = trimmed_voices
+
+            else:
+                candidate_voices = candidate_voices[:args.n_voices]
             if len(candidate_voices) != len(gt):
                 print(f"Not enough outputs for dir {curr_dir}. Lower threshold to evaluate.")
                 return
 
-        gpu_lock.release()
+        if args.debug:
+            sf.write(os.path.join(args.writing_dir, "mixed.wav"),
+                     mixed_data[0],
+                     args.sr)
+            for voice in candidate_voices:
+                fname = "out_angle{:.2f}.wav".format(
+                    voice.angle * 180 / np.pi)
+                sf.write(os.path.join(args.writing_dir, fname), voice.data[0],
+                         args.sr)
 
+        gpu_lock.release()
         curr_angle_errors = []
         curr_input_sdr = []
         curr_output_sdr = []
@@ -135,6 +167,7 @@ def main(args):
             for gt_idx, output_idx in enumerate(best_permutation):
                 angle_error = angular_distance(candidate_voices[output_idx].angle,
                                                gt[gt_idx].angle)
+                # print(angle_error)
                 curr_angle_errors.append(angle_error)
 
                 # To speed up we only evaluate channel 0. For rigorous results
@@ -143,15 +176,25 @@ def main(args):
                                         single_channel=True)
                 output_sdr = compute_sdr(gt[gt_idx].data,
                                          candidate_voices[output_idx].data, single_channel=True)
+                
                 curr_input_sdr.append(input_sdr)
                 curr_output_sdr.append(output_sdr)
+
+            # print(curr_input_sdr)
+            # print(curr_output_sdr)
 
             all_angle_errors[idx] = curr_angle_errors
             all_input_sdr[idx] = curr_input_sdr
             all_output_sdr[idx] = curr_output_sdr
 
+        # print("Running median angle error: {}".format(np.median(np.array(all_angle_errors[:idx+1])) * 180 / np.pi))
+        # print("Running median SDRi: ",
+        #       np.median(np.array(all_output_sdr[:idx+1]) - np.array(all_input_sdr[:idx+1])))
+
     pool = mp.Pool(args.n_workers)
-    pool.map(evaluate_dir, range(len(all_dirs)))
+    with tqdm.tqdm(total=len(all_dirs)) as pbar:
+        for i, _ in enumerate(pool.imap_unordered(evaluate_dir, range(len(all_dirs)))):
+            pbar.update()
     pool.close()
     pool.join()
 
@@ -164,17 +207,13 @@ def main(args):
 
     else:
         print("Median Angular Error: ", np.median(np.array(all_angle_errors)) * 180 / np.pi)
-
         print("Median SDRi: ",
               np.median(np.array(all_output_sdr) - np.array(all_input_sdr)))
-
         # Uncomment to save the data for visualization
-        # np.save("angleerror_{}voices.npy".format(args.n_voices),
-        #         np.array(all_angle_errors))
-        # np.save("inputsdr_{}voices.npy".format(args.n_voices),
-        #         np.array(all_input_sdr))
-        # np.save("outputsdr_{}voices.npy".format(args.n_voices),
-        #         np.array(all_output_sdr))
+        # np.save("angleerror_{}voices_{}kHz.npy".format(args.n_voices, args.sr),
+        #         np.array(all_angle_errors).flatten())
+        # np.save("SDR_{}voices_{}kHz.npy".format(args.n_voices, args.sr),
+        #         np.array([np.array(all_input_sdr).flatten(), np.array(all_output_sdr).flatten()]))
 
 
 
@@ -189,8 +228,6 @@ if __name__ == '__main__':
                         help="Number of channels")
     parser.add_argument('--use_cuda', dest='use_cuda', action='store_true',
                         help="Whether to use cuda")
-    parser.add_argument('--device', type=str, default='cpu',
-                        help="Device for pytorch")
     parser.add_argument('--debug', action='store_true', help="Save outputs")
     parser.add_argument('--mic_radius', default=.0725, type=float,
                         help="To do")
@@ -204,6 +241,10 @@ if __name__ == '__main__':
     parser.add_argument(
         '--prec_recall', action='store_true', help=
         "To compute precision and recall, we don't let the network know the number of sources"
+    )
+    parser.add_argument(
+        '--oracle_position', action='store_true', help=
+        "Compute the separation results if you know the GT positions"
     )
 
     print(parser.parse_args())

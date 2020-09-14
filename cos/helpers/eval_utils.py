@@ -7,18 +7,19 @@ from mir_eval.separation import bss_eval_sources
 
 from cos.helpers.utils import angular_distance
 
-def cheap_sdr(estimated_signal, reference_signals, scaling=True):
+def si_sdr(estimated_signal, reference_signals, scaling=True):
     """
-    This is a cheaper approximation to the mir_eval SI-SDR. We nuse this
-    for non-max suppression but not for evaluation
+    This is a scale invariant SDR. See https://arxiv.org/pdf/1811.02508.pdf
+    or https://github.com/sigsep/bsseval/issues/3 for the motivation and
+    explanation
 
     Input:
         estimated_signal and reference signals are (N,) numpy arrays
 
-    Returns: SDR as scalar
+    Returns: SI-SDR as scalar
     """
-    Rss= np.dot(reference_signals, reference_signals)
-    this_s= reference_signals
+    Rss = np.dot(reference_signals, reference_signals)
+    this_s = reference_signals
 
     if scaling:
         # get the scaling factor for clean sources
@@ -43,7 +44,8 @@ def compute_sdr(gt, output, single_channel=False):
 
     channels = [0] if single_channel else range(gt.shape[0])
     for channel_idx in channels:
-        sdr, _, _, _ = bss_eval_sources(gt[channel_idx], output[channel_idx])
+        # sdr, _, _, _ = bss_eval_sources(gt[channel_idx], output[channel_idx])
+        sdr = si_sdr(output[channel_idx], gt[channel_idx])
         per_channel_sdr.append(sdr)
 
     return np.array(per_channel_sdr).mean()

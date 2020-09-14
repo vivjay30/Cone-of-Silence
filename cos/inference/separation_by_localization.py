@@ -20,12 +20,12 @@ from cos.helpers.constants import ALL_WINDOW_SIZES, \
 from cos.helpers.visualization import draw_diagram
 from cos.training.network import CoSNetwork, center_trim, \
     normalize_input, unnormalize_input
-from cos.helpers.eval_utils import cheap_sdr
+from cos.helpers.eval_utils import si_sdr
 
 # Constants which may be tweaked based on your setup
 ENERGY_CUTOFF = 0.001
-NMS_RADIUS = np.pi / 8
-NMS_SIMILARITY_SDR = -5.0  # SDR cutoff for different candidates
+NMS_RADIUS = np.pi / 4
+NMS_SIMILARITY_SDR = -7.0  # SDR cutoff for different candidates
 
 CandidateVoice = namedtuple("CandidateVoice", ["angle", "energy", "data"])
 
@@ -57,7 +57,7 @@ def nms(candidate_voices, nms_cutoff):
             #     candidate_voice.data -
             #     best_candidate_voice.data).mean() > nms_cutoff
 
-            different_content = cheap_sdr(
+            different_content = si_sdr(
                 candidate_voice.data[0],
                 best_candidate_voice.data[0]) < nms_cutoff
 
@@ -134,8 +134,8 @@ def run_separation(mixed_data, model, args,
                 print("Angle {:.2f} energy {}".format(voice.angle, energy))
                 fname = "out{}_angle{:.2f}.wav".format(
                     window_idx, voice.angle * 180 / np.pi)
-                sf.write(os.path.join(args.writing_dir, fname), output[0],
-                         args.sr)
+                # sf.write(os.path.join(args.writing_dir, fname), output[0],
+                #          args.sr)
 
             # If there was something there
             if energy > energy_cutoff:
@@ -216,7 +216,7 @@ def main(args):
                                      temporal_chunk_size]
 
         output_voices = run_separation(curr_mixed_data, model, args)
-        for voice in output_voices[:1]:
+        for voice in output_voices:
             fname = "output_angle{:.2f}.wav".format(
                 voice.angle * 180 / np.pi)
             sf.write(os.path.join(args.writing_dir, fname), voice.data[0],

@@ -3,6 +3,8 @@
 import numpy as np
 import torch
 
+from pathlib import Path
+
 from cos.helpers.constants import SPEED_OF_SOUND
 
 
@@ -20,12 +22,16 @@ def shift_mixture(input_data, target_position, mic_radius, sr, inverse=False):
 
     Returns: shifted data and a list of the shifts
     """
+    # elevation_angle = 0.0 * np.pi / 180
+    # target_height = 3.0 * np.tan(elevation_angle)
+    # target_position = np.append(target_position, target_height)
+
     num_channels = input_data.shape[0]
 
     # Must match exactly the generated or captured data
     mic_array = [[
         mic_radius * np.cos(2 * np.pi / num_channels * i),
-        mic_radius * np.sin(2 * np.pi / num_channels * i)
+        mic_radius * np.sin(2 * np.pi / num_channels * i),
     ] for i in range(num_channels)]
 
     # Mic 0 is the canonical position
@@ -88,4 +94,37 @@ def convert_angular_range(angle: float):
 
     return corrected_angle
 
+def trim_silence(audio, window_size=22050, cutoff=0.001):
+    """Trims all silence within an audio file"""
+    idx = 0
+    new_audio = []
+    while idx * window_size < audio.shape[1]:
+        segment = audio[:, idx*window_size:(idx+1)*window_size]
+        if segment.std() > cutoff:
+            new_audio.append(segment)
+        idx += 1
 
+    return np.concatenate(new_audio, axis=1)
+
+
+def check_valid_dir(dir, requires_n_voices=2):
+    """Checks that there is at least n voices"""
+    if len(list(Path(dir).glob('*_voice00.wav'))) < 1:
+        return False
+
+    if requires_n_voices == 2:
+        if len(list(Path(dir).glob('*_voice01.wav'))) < 1:
+            return False
+
+    if requires_n_voices == 3:
+        if len(list(Path(dir).glob('*_voice02.wav'))) < 1:
+            return False
+
+    if requires_n_voices == 4:
+        if len(list(Path(dir).glob('*_voice03.wav'))) < 1:
+            return False
+
+    if len(list(Path(dir).glob('metadata.json'))) < 1:
+        return False
+
+    return True
