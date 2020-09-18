@@ -1,8 +1,8 @@
 # The Cone of Silence: Speech Separation by Localization
 ![alt text](https://drive.google.com/uc?export=view&id=1h5ffwTdyD8M9ujrDIlbUl5s9SG7Ht1pd)
 
-[Teerapat Jenrungrot](https://mjenrungrot.com/)**\***, [Vivek Jayaram](http://www.vivekjayaram.com/)**\***, [Steve Seitz](https://homes.cs.washington.edu/~seitz/), and [Ira Kemelmacher-Shlizerman](https://homes.cs.washington.edu/~kemelmi/)
-*\*Co-First Authors*
+[Teerapat Jenrungrot](https://mjenrungrot.com/)**\***, [Vivek Jayaram](http://www.vivekjayaram.com/)**\***, [Steve Seitz](https://homes.cs.washington.edu/~seitz/), and [Ira Kemelmacher-Shlizerman](https://homes.cs.washington.edu/~kemelmi/)<br>
+*\*Co-First Authors*<br>
 University of Washington
 
 ### [Project Page](http://grail.cs.washington.edu/projects/cone-of-silence/)
