@@ -1,0 +1,7 @@
+### Requirements
+librosa
+torch >= 1.3.0
+soundfile
+scipy
+pyroomacoustics
+matplotlib
