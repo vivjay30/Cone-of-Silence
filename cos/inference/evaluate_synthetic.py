@@ -32,6 +32,7 @@ def get_items(curr_dir, args):
     # All voice signals
     keys = ["voice{:02}".format(i) for i in range(num_voices)]
 
+    # Comment out this line to do voice only, no bg
     if "bg" in json_data:
         keys.append("bg")
     """
@@ -70,6 +71,7 @@ def get_items(curr_dir, args):
 
 
 def main(args):
+    args.moving = False
     device = torch.device('cuda') if args.use_cuda else torch.device('cpu')
 
     args.device = device
@@ -114,6 +116,7 @@ def main(args):
             # Case where we don't know the number of sources
             candidate_voices = run_separation(mixed_data, model, args)
 
+        # Case where we know the number of sources
         else:
             # Normal run
             if not args.oracle_position:
@@ -121,7 +124,7 @@ def main(args):
             # In order to compute SDR or angle error, the number of outputs must match gt
             # We set a very low threshold to ensure we get the correct number of outputs
             if args.oracle_position or len(candidate_voices) < len(gt):
-                # print("Had to go again\n")
+                print("Had to go again\n")
                 candidate_voices = run_separation(mixed_data, model, args, 0.000001)
 
             # Use the GT positions to find the best sources
@@ -133,6 +136,7 @@ def main(args):
                     trimmed_voices.append(candidate_voices[best_idx])
                 candidate_voices = trimmed_voices
 
+            # Take the top N voices
             else:
                 candidate_voices = candidate_voices[:args.n_voices]
             if len(candidate_voices) != len(gt):

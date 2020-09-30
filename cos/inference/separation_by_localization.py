@@ -23,7 +23,7 @@ from cos.training.network import CoSNetwork, center_trim, \
 from cos.helpers.eval_utils import si_sdr
 
 # Constants which may be tweaked based on your setup
-ENERGY_CUTOFF = 0.001
+ENERGY_CUTOFF = 0.002
 NMS_RADIUS = np.pi / 4
 NMS_SIMILARITY_SDR = -7.0  # SDR cutoff for different candidates
 
@@ -111,7 +111,7 @@ def run_separation(mixed_data, model, args,
     The main separation by localization algorithm
     """
     # Get the initial candidates
-    num_windows = len(ALL_WINDOW_SIZES)
+    num_windows = len(ALL_WINDOW_SIZES) if not args.moving else 3
     starting_angles = utils.get_starting_angles(ALL_WINDOW_SIZES[0])
     candidate_voices = [CandidateVoice(x, None, None) for x in starting_angles]
 
@@ -223,8 +223,9 @@ def main(args):
                      args.sr)
 
         candidate_angles = [voice.angle for voice in output_voices]
+        diagram_window_angle = ALL_WINDOW_SIZES[2] if args.moving else ALL_WINDOW_SIZES[-1]
         draw_diagram([], candidate_angles,
-                    ALL_WINDOW_SIZES[-1],
+                    diagram_window_angle,
                     os.path.join(args.writing_dir, "positions.png".format(chunk_idx)))
 
 if __name__ == '__main__':
@@ -256,4 +257,7 @@ if __name__ == '__main__':
                         default=3.0,
                         type=float,
                         help="Seconds of input to the network")
+    parser.add_argument('--moving',
+                        action='store_true',
+                        help="If the sources are moving then stop at a coarse window")
     main(parser.parse_args())

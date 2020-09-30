@@ -200,6 +200,8 @@ def main(args: argparse.Namespace):
 
     all_voices = Path(args.input_voice_dir).rglob('*.wav')
     args.all_voices = list(all_voices)
+    if len(args.all_voices) == 0:
+        raise ValueError("No voice files found")
 
     pbar = tqdm.tqdm(total=args.n_outputs)
     pool = mp.Pool(args.n_workers)
@@ -226,7 +228,7 @@ if __name__ == '__main__':
     parser.add_argument('--mic_radius',
                         default=.03231,
                         type=float,
-                        help="To do")
+                        help="Radius of the mic array in meters")
     parser.add_argument('--n_voices', type=int, default=4)
     parser.add_argument('--n_outputs', type=int, default=10000)
     parser.add_argument('--n_workers', type=int, default=8)
