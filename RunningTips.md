@@ -11,6 +11,9 @@ T he point source model breaks down if there is not a direct line of sight betwe
 ## Hyperparameters
 If the sources are completely stationary, you can increase the `--duration` flag which processes large chunks at a time. This improves the performance and reduces boundary effects. At the top of `cos/inference/separation_by_localization.py` are additional parameters. Tweak `ENERGY_CUTOFF` to more aggressively keep or reject sources. For more aggressive non-max suppression, you can reduce `NMS_SIMILARITY_SDR` which only keeps additional sources if they have a SDR to the existing source that is lower than this parameter. 
 
+## Post Processing
+After separating voices from each other, any type of single channel post processing can be run on the output. We found that it was useful to run a low-pass filter on the output. The network requires 44.1kHz sampling runing for localization and time differences, but can sometimes produce artifacts in these high frequency ranges. Because voice doesn't contain many frequences about 10kHz, they can simply be cut.
+
 # Tips for Training on Real Data
 
 We strongly recommend training on data collected from your specific microphone. We expect the network performance to improve with more training data, even beyond the pretrained models we have provided. If you train on new data, do not train from scratch: instead fine-tune from our existing weights even if the number of channels is different. Training from scratch often results in the network outputting silence everywhere. In our experience, it is best to jointly train on real and synthetic data. 
