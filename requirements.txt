@@ -8,3 +8,4 @@ matplotlib
 mir_eval
 tqdm
 numpy
+pysndfx
