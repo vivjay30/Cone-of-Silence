@@ -69,6 +69,7 @@ python cos/training/train.py \
    --n_mics {M} \
    --use_cuda
 ```
+__Note__: The training code expects you to have `sox` installed. The easiest way to install is to install it using conda as follows: `conda install -c conda-forge -y sox`.
 
 ## Training on Real Data
 For those looking to improve on the pretrained models, we recommend gathering a lot more real data. We did not have the ability to gather very accurately positioned real data in a proper sound chamber. By training with a lot more real data, the results will almost certainly improve. All you have to do is create synthetic composites of speakers in the same format as the synthetic data, and run the same training script.
