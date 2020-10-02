@@ -71,7 +71,8 @@ For those looking to improve on the pretrained models, we recommend gathering a 
 ## Evaluation
 For the synthetic data and evaluation, we use a setup of 6 mics in a circle of radius 7.25 cm. The following is instructions to obtain results on mixtures of N voices and no backgrounds. First generate a synthetic datset with the microphone setup specified previous with ```--n_voices 8``` from the test set of VCTK. Then run the following script:  
 
-```python cos/inference/evaluate_synthetic.py \
+```
+python cos/inference/evaluate_synthetic.py \
     /path/to/rendered_data/ \
     /path/to/model.pt \
     --n_channels 6 \
