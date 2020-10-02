@@ -27,12 +27,19 @@ export PYTHONPATH=$PYTHONPATH:`pwd`
 
 Make sure all the requirements in the requirements.txt are installed. We tested the code with torch 1.3.0, librosa 0.7.0 and cuda 10.0
 
-Download Pretrained Models: [Here](https://drive.google.com/drive/folders/1YeuHPvqmaPMGvcSOb9J-hnLDYSbK1S2c?usp=sharing)
+Download Pretrained Models: [Here](https://drive.google.com/drive/folders/1YeuHPvqmaPMGvcSOb9J-hnLDYSbK1S2c?usp=sharing). If you're working in a command-line environment, we recommend using `gdown` to download the checkpoint files.
 
 ## Quickstart: Running on Real Data
 You can easily produce results like those in our demo videos. Our pre-trained real models work with the 4 mic [Seed ReSpeaker MicArray v 2.0](https://wiki.seeedstudio.com/ReSpeaker_Mic_Array_v2.0/). We even provide a sample 4 channel file for you to run. When you capture the data, it must be a m channel recording. Run the full command like below. For moving sources, reduce the duration flag to 1.5 and add `--moving` to stop the search at a coarse window.
 ```
-python cos/inference/separation_by_localization.py /path/to/model.pt /path/to/input_file.wav outputs/some_dirname/ --n_channels 4 --sr 44100 --mic_radius .03231 --use_cuda
+python cos/inference/separation_by_localization.py \
+    /path/to/model.pt \
+    /path/to/input_file.wav \
+    outputs/some_dirname/ \
+    --n_channels 4 \
+    --sr 44100 \
+    --mic_radius .03231 \
+    --use_cuda
 ```
 
 
@@ -46,16 +53,33 @@ python cos/generate_dataset.py /path/to/VCTK/data ./output/somename --input_back
 ## Training on Synthetic Data
 Below is an example command to train on the rendered data. You need to replace the training and testing dirs with the path to the generated datasets from above. We highly recommend initializing with a pre-trained model and not training from scratch.
 ```
-python cos/training/train.py ./generated/train_dir ./generated/test_dir --name experiment_name --checkpoints_dir ./checkpoints --pretrain_path ./path/to/pretrained.pt --batch_size 8 --mic_radius {radius}  --n_mics {M} --use_cuda
+python cos/training/train.py \
+   ./generated/train_dir \
+   ./generated/test_dir \
+   --name experiment_name \
+   --checkpoints_dir ./checkpoints \
+   --pretrain_path ./path/to/pretrained.pt \
+   --batch_size 8 \
+   --mic_radius {radius} \
+   --n_mics {M} \
+   --use_cuda
 ```
 
 ## Training on Real Data
 For those looking to improve on the pretrained models, we recommend gathering a lot more real data. We did not have the ability to gather very accurately positioned real data in a proper sound chamber. By training with a lot more real data, the results will almost certainly improve. All you have to do is create synthetic composites of speakers in the same format as the synthetic data, and run the same training script.
 
 ## Evaluation
-For the synthetic data and evaluation, we use a setup of 6 mics in a circle of radius 7.25cm. The following is instructions to obtain results on mixtures of N voices and no backgrounds. First generate a synthetic datset with the microphone setup specified previous with ```--n_voices 8``` from the test set of VCTK. Then run the following script:  
+For the synthetic data and evaluation, we use a setup of 6 mics in a circle of radius 7.25 cm. The following is instructions to obtain results on mixtures of N voices and no backgrounds. First generate a synthetic datset with the microphone setup specified previous with ```--n_voices 8``` from the test set of VCTK. Then run the following script:  
 
-```python cos/inference/evaluate_synthetic.py /path/to/rendered_data/ /path/to/model.pt --n_channels 6 --mic_radius .0725 --sr 44100 --use_cuda --n_workers 1 --n_voices {N}```
+```python cos/inference/evaluate_synthetic.py \
+    /path/to/rendered_data/ \
+    /path/to/model.pt \
+    --n_channels 6 \
+    --mic_radius .0725 \
+    --sr 44100 \
+    --use_cuda \
+    --n_workers 1 \
+    --n_voices {N}```
 
 Add ```--compute_sdr``` separately to get the SDR.
 
