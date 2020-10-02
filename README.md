@@ -89,7 +89,7 @@ python cos/inference/evaluate_synthetic.py \
     --n_voices {N}
 ```
 
-Add ```--compute_sdr``` separately to get the SDR.
+Add ```--prec_recall``` separately to get the precision and recall.
 
 | Number of Speakers N | 2     | 3     | 4     | 5     | 6     | 7     | 8     |
 |----------------------|-------|-------|-------|-------|-------|-------|-------|
