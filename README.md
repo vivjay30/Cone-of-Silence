@@ -47,7 +47,7 @@ For training and evaluation, we use synthetically rendered spatial data. We plac
 ```
 python cos/generate_dataset.py \
     /path/to/VCTK/data \
-    ./output/somename \
+    ./outputs/somename \
     --input_background_path any_bg_audio.wav \
     --n_voices 2 \
     --n_outputs 1000 \
