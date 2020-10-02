@@ -6,3 +6,4 @@ scipy
 pyroomacoustics
 matplotlib
 mir_eval
+tqdm
