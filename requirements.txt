@@ -5,3 +5,4 @@ soundfile
 scipy
 pyroomacoustics
 matplotlib
+mir_eval
