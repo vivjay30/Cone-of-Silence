@@ -42,12 +42,17 @@ python cos/inference/separation_by_localization.py \
     --use_cuda
 ```
 
-
-
 ## Rendering Synthetic Spatial Data
 For training and evaluation, we use synthetically rendered spatial data. We place the voices in a virtual room and render the arrival times, level differences, and reverb using pyroomacoustics. We used the VCTK dataset but any voice dataset would work. An example command is below
 ```
-python cos/generate_dataset.py /path/to/VCTK/data ./output/somename --input_background_path any_bg_audio.wav --n_voices 2  --n_outputs 1000 --mic_radius {radius} --n_mics {M}
+python cos/generate_dataset.py \
+    /path/to/VCTK/data \
+    ./output/somename \
+    --input_background_path any_bg_audio.wav \
+    --n_voices 2 \
+    --n_outputs 1000 \
+    --mic_radius {radius} \
+    --n_mics {M}
 ```
 
 ## Training on Synthetic Data
