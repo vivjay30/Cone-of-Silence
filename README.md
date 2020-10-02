@@ -79,7 +79,8 @@ For the synthetic data and evaluation, we use a setup of 6 mics in a circle of r
     --sr 44100 \
     --use_cuda \
     --n_workers 1 \
-    --n_voices {N}```
+    --n_voices {N}
+```
 
 Add ```--compute_sdr``` separately to get the SDR.
 
