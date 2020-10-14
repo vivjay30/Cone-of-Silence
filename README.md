@@ -9,7 +9,7 @@ University of Washington
 ## [Project Page](http://grail.cs.washington.edu/projects/cone-of-silence/)
 Video and audio demos are available at the project page
 
-### Paper - Coming Soon
+### [Paper](https://arxiv.org/pdf/2010.06007.pdf)
 34th Conference on Neural Information Processing Systems, NeurIPS 2020. (Oral)
 
 ### Blog Post - Coming Soon
