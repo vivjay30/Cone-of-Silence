@@ -62,7 +62,7 @@ python cos/generate_dataset.py \
 ```
 
 ## Training on Synthetic Data
-Below is an example command to train on the rendered data. You need to replace the training and testing dirs with the path to the generated datasets from above. We highly recommend initializing with a pre-trained model and not training from scratch.
+Below is an example command to train on the rendered data. You need to replace the training and testing dirs with the path to the generated datasets from above. We highly recommend initializing with a pre-trained model (even if the number of mics is different) and not training from scratch.
 ```
 python cos/training/train.py \
    ./generated/train_dir \
