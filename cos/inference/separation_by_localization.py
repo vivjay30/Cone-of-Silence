@@ -191,7 +191,7 @@ def main(args):
 
     args.device = device
     model = CoSNetwork(n_audio_channels=args.n_channels)
-    model.load_state_dict(torch.load(args.model_checkpoint), strict=True)
+    model.load_state_dict(torch.load(args.model_checkpoint), strict=True, map_location=args.device)
     model.train = False
     model.to(device)
 
