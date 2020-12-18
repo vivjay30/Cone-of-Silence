@@ -36,7 +36,7 @@ gdown --id 18dpUnng_8ZUlDrQsg5VymypFnFlQBPIp  # Download synthetic_6mics_.0725m_
 ```
 
 ## Quickstart: Running on Real Data
-You can easily produce results like those in our demo videos. Our pre-trained real models work with the 4 mic [Seed ReSpeaker MicArray v 2.0](https://wiki.seeedstudio.com/ReSpeaker_Mic_Array_v2.0/). We even provide a sample 4 channel file for you to run. When you capture the data, it must be a m channel recording. Run the full command like below. For moving sources, reduce the duration flag to 1.5 and add `--moving` to stop the search at a coarse window.
+You can easily produce results like those in our demo videos. Our pre-trained real models work with the 4 mic [Seed ReSpeaker MicArray v 2.0](https://wiki.seeedstudio.com/ReSpeaker_Mic_Array_v2.0/). We even provide a sample 4 channel file for you to run [Here](https://drive.google.com/drive/folders/1YeuHPvqmaPMGvcSOb9J-hnLDYSbK1S2c?usp=sharing). When you capture the data, it must be a m channel recording. Run the full command like below. For moving sources, reduce the duration flag to 1.5 and add `--moving` to stop the search at a coarse window.
 ```
 python cos/inference/separation_by_localization.py \
     /path/to/model.pt \
