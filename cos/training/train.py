@@ -114,10 +114,6 @@ def test_epoch(model: nn.Module, device: torch.device,
             output_signal = center_trim(output_signal, data)
 
             # Un-normalize
-            output_signal = output_signal * stds.unsqueeze(
-                3) + means.unsqueeze(3)
-
-            # Un-normalize
             output_signal = unnormalize_input(output_signal, means, stds)
             output_voices = output_signal[:, 0]
 
